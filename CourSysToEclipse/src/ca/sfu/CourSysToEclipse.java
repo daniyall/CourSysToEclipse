@@ -1,21 +1,26 @@
 package ca.sfu;
 
-import static ca.sfu.ui.Strings.*;
-
 import java.io.File;
-
-import ca.sfu.exceptions.UnableToPrepareSubmissionException;
 
 public class CourSysToEclipse {
 
-	public static void prepareForEclipse(File sourceZip, File destFolder, String assnName) throws UnableToPrepareSubmissionException {
-		if (!sourceZip.exists()) {
-			throw new UnableToPrepareSubmissionException(ZIP_NOT_FOUND);
+	public static void main(String[] args) {
+		if(args.length != 3) {
+			printUsage();
+			return;
 		}
 		
+		File sourceZip = new File(args[0]);
+		if (!sourceZip.exists()) {
+			System.out.println("Source file does not exist.");
+			return;
+		}
+		
+		File destFolder = new File(args[1]);
 		if(!destFolder.exists()) {
 			if(!destFolder.mkdir()) {
-				throw new UnableToPrepareSubmissionException(COULD_NOT_CREATE_DEST);
+				System.out.println("Could not create destination directory.");
+				return;
 			}
 		}
 		
@@ -23,13 +28,21 @@ public class CourSysToEclipse {
 		try {
 			extractor.extract();
 		} catch (ZipExtractionException e) {
-			throw new UnableToPrepareSubmissionException(e.getMessage());
+			System.out.println(e.getMessage());
+			return;
 		}
 		
-		Renamer renamer = new Renamer(destFolder, assnName);
+		Renamer renamer = new Renamer(destFolder, args[2]);
 		renamer.rename();
 		
 		EclipseProjectRenamer projectRenamer = new EclipseProjectRenamer(destFolder);
-		projectRenamer.renameProjects();		
+		projectRenamer.renameProjects();
+		
+		System.out.println("Done. All submissions should be in " + destFolder.getAbsolutePath());
 	}
+
+	private static void printUsage() {
+		System.out.println("Correct usage: CourSysToEclipse [sourceZip] [destinationPath] [assignmentName]");
+	}
+
 }
