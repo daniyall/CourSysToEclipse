@@ -1,48 +1,41 @@
 package ca.sfu;
 
+import static ca.sfu.ui.Strings.*;
+
 import java.io.File;
 
-public class CourSysToEclipse {
+import ca.sfu.exceptions.UnableToPrepareSubmissionException;
 
-	public static void main(String[] args) {
-		if(args.length != 3) {
-			printUsage();
-			return;
-		}
-		
-		File sourceZip = new File(args[0]);
+public class CourSysToEclipse {
+	
+	public static String[] SUPPORTED_INPUT_FILES = {"zip"};
+	
+	public static PrepareSummary prepareForEclipse(File sourceZip, File destFolder, String assnName) throws UnableToPrepareSubmissionException {
 		if (!sourceZip.exists()) {
-			System.out.println("Source file does not exist.");
-			return;
+			throw new UnableToPrepareSubmissionException(ZIP_NOT_FOUND);
 		}
 		
-		File destFolder = new File(args[1]);
 		if(!destFolder.exists()) {
 			if(!destFolder.mkdir()) {
-				System.out.println("Could not create destination directory.");
-				return;
+				throw new UnableToPrepareSubmissionException(COULD_NOT_CREATE_DEST);
 			}
 		}
 		
-		RecursiveZipExtractor extractor = new RecursiveZipExtractor(sourceZip, destFolder);
+		
+		PrepareSummary summary = new PrepareSummary();
+		RecursiveZipExtractor extractor = new RecursiveZipExtractor(sourceZip, destFolder, summary);
 		try {
 			extractor.extract();
 		} catch (ZipExtractionException e) {
-			System.out.println(e.getMessage());
-			return;
+			throw new UnableToPrepareSubmissionException(e.getMessage());
 		}
 		
-		Renamer renamer = new Renamer(destFolder, args[2]);
+		Renamer renamer = new Renamer(destFolder, assnName);
 		renamer.rename();
 		
-		EclipseProjectRenamer projectRenamer = new EclipseProjectRenamer(destFolder);
+		EclipseProjectRenamer projectRenamer = new EclipseProjectRenamer(destFolder, summary);
 		projectRenamer.renameProjects();
 		
-		System.out.println("Done. All submissions should be in " + destFolder.getAbsolutePath());
+		return summary;
 	}
-
-	private static void printUsage() {
-		System.out.println("Correct usage: CourSysToEclipse [sourceZip] [destinationPath] [assignmentName]");
-	}
-
 }

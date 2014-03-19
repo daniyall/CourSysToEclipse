@@ -22,9 +22,11 @@ import org.xml.sax.SAXException;
 
 public class EclipseProjectRenamer {
 	private File folder;
+	private PrepareSummary summary;
 	
-	public EclipseProjectRenamer(File folder) {
+	public EclipseProjectRenamer(File folder, PrepareSummary summary) {
 		this.folder = folder;
+		this.summary = summary;
 	}
 	
 	
@@ -33,10 +35,17 @@ public class EclipseProjectRenamer {
 		
 		for(File dir : folder.listFiles()) {
 			if(dir.isDirectory()) {
+				boolean containsProjectFile = false;
 				for(File projFile : dir.listFiles()) {
 					if(projFile.getName().equalsIgnoreCase(".project")) {
 						changeProjectName(projFile, dir.getName());
+						summary.incrSubmissionsPrepared();
+						containsProjectFile = true;
 					}
+				}
+				
+				if(!containsProjectFile) {
+					summary.addSubmissionNotPrepared(dir);
 				}
 			}
 		}

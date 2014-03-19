@@ -24,9 +24,12 @@ public class RecursiveZipExtractor {
 	
 	private List<File> extractedFilesCausingWarning = new ArrayList<File>();
 
-	public RecursiveZipExtractor(File source, File target) {
+	private PrepareSummary summary;
+	
+	public RecursiveZipExtractor(File source, File target, PrepareSummary summary) {
 		this.sourceZip = source;
 		this.targetFolder = target;
+		this.summary = summary;
 	}
 
 	/**
@@ -113,15 +116,11 @@ public class RecursiveZipExtractor {
 		// Algorithm inspiration:
 		// http://stackoverflow.com/questions/981578/how-to-unzip-files-recursively-in-java
 		
-		if(sourceFile.getName().equalsIgnoreCase("MassiveFiles.zip")) {
-			return;
-		}
-		
 		ZipFile zipFile = null;
 		try {
 			zipFile = new ZipFile(sourceFile);
 		} catch (Exception e) {
-			System.out.println(sourceFile.getAbsolutePath() + e.getMessage());
+			summary.addSubmissionNotPrepared(sourceFile);
 			return;
 		}
 		Enumeration<? extends ZipEntry> entries = zipFile.entries();
@@ -134,7 +133,7 @@ public class RecursiveZipExtractor {
 			if (!entry.isDirectory()) {
 				InputStream stream = zipFile.getInputStream(entry);
 				writeStreamToFile(target, stream);
-
+				
 				if (warningFilter.accept(target)) {
 					extractedFilesCausingWarning.add(target);
 				}
@@ -142,6 +141,7 @@ public class RecursiveZipExtractor {
 				// Recurse into contained ZIP files:
 				if (isValidZipFile(target)) {
 					extractZipFile(target, target.getParentFile());
+					summary.incrFilesFoundInZip();
 				}
 			}
 		}
